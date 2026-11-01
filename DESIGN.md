@@ -1,7 +1,7 @@
 # Palette Lab — デザインガイド
 
 > ドキュメント種別：ビジュアル・体験デザイン（Look / Tone）  
-> ステータス：草案・未実装  
+> ステータス：実装済み  
 > 関連文書：[ゲームコンセプト](./docs/palette-lab-concept.md) ／ [ゲーム仕様書](./docs/palette-lab-game-spec.md) ／ [実装判断の記録](./docs/implementation-decisions.md)
 
 ## 1. 方向性

@@ -2,7 +2,7 @@
 
 > 文書種別：AIコーディングエージェント向け実装指示（Development Instructions）  
 > 対象：v0.1 プロトタイプ  
-> ステータス：実装開始用  
+> ステータス：v0.1 実装済み（当初の指示の記録として残している）  
 > 関連文書：[ゲームコンセプト](./palette-lab-concept.md) ／ [ゲーム仕様書](./palette-lab-game-spec.md)
 
 ## 0. エージェントへの依頼
