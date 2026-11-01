@@ -71,6 +71,16 @@ describe('scoreColor', () => {
     }
   });
 
+  // 初級は2色1滴ずつの15通りを全部使っていて、お題を差し替えられないので外す
+  it.each(ALL_STAGES.filter((stage) => stage.difficulty !== 'beginner'))(
+    '$name はその難易度の塗料の単色1滴だけでは80点にならない',
+    (stage) => {
+      for (const pigment of COURSES[stage.difficulty].pigments) {
+        expect(scoreColor(targetColorOf(stage), PIGMENT_COLORS[pigment])).toBeLessThan(80);
+      }
+    },
+  );
+
   const SHORT_MIX_LIMITS = [
     ['intermediate', 2],
     ['advanced', 4],
