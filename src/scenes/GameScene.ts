@@ -25,6 +25,7 @@ export type GameSceneData = {
   stages: readonly Stage[];
   stageIndex: number;
   results: readonly RoundResult[];
+  metersShown: boolean;
 };
 
 export type RoundResult = {
@@ -38,12 +39,24 @@ export type RoundResult = {
 export type ResultSceneData = { run: GameSceneData; result: RoundResult };
 
 export function newRun(difficulty: Difficulty): GameSceneData {
-  return { difficulty, stages: pickStages(COURSES[difficulty].stages, STAGES_PER_RUN), stageIndex: 0, results: [] };
+  return {
+    difficulty,
+    stages: pickStages(COURSES[difficulty].stages, STAGES_PER_RUN),
+    stageIndex: 0,
+    results: [],
+    metersShown: false,
+  };
 }
 
-const SWATCH_SIZE = 160;
-const SWATCH_Y = 190;
+const TARGET_SWATCH_X = 130;
 const CURRENT_SWATCH_X = 350;
+const SWATCH_STAGE_PADDING = 15;
+const SWATCH_LABEL_GAP = 12;
+// 色相環と明度バーを隠している間は色見本を大きくし、空いた範囲の上下中央に置く
+const SWATCH_LAYOUTS = {
+  withMeters: { width: 130, height: 130, stageTop: 122 },
+  withoutMeters: { width: 170, height: 210, stageTop: 160 },
+};
 const METER_Y = 378;
 const METER_RADIUS = 70;
 const PIGMENT_ROWS_Y = [500, 588];
@@ -63,17 +76,20 @@ export class GameScene extends Phaser.Scene {
   private round: RoundState = createRound();
   private target: RgbColor = { r: 0, g: 0, b: 0 };
   private leaving = false;
-  private targetShown = false;
 
   private displayedColor: RgbColor | null = null;
   private colorTween?: Phaser.Tweens.Tween;
 
+  private swatchStage!: Phaser.GameObjects.Rectangle;
+  private targetSwatch!: Phaser.GameObjects.Rectangle;
   private currentSwatch!: Phaser.GameObjects.Rectangle;
   private unmixedLabel!: Phaser.GameObjects.Text;
+  private swatchLabels: Phaser.GameObjects.Text[] = [];
   private colorDisc!: ColorDisc;
   private lightnessBar!: LightnessBar;
   private dropDots!: DropDots;
   private dropsText!: Phaser.GameObjects.Text;
+  private meterLayer!: Phaser.GameObjects.Layer;
   private hintButton!: TextButton;
   private undoButton!: TextButton;
   private completeButton!: TextButton;
@@ -91,10 +107,10 @@ export class GameScene extends Phaser.Scene {
     this.round = createRound();
     this.target = targetColorOf(this.stage);
     this.leaving = false;
-    this.targetShown = false;
     this.displayedColor = null;
     this.colorTween = undefined;
     this.pigmentButtons = [];
+    this.swatchLabels = [];
     this.quitConfirmObjects = [];
   }
 
@@ -103,15 +119,16 @@ export class GameScene extends Phaser.Scene {
     const { difficulty, stages, stageIndex } = this.run;
 
     new TextButton(this, 70, 28, 96, 32, 'タイトルへ', () => this.openQuitConfirm(), 'secondary', 16);
+    this.hintButton = new TextButton(this, GAME_WIDTH - 70, 28, 96, 32, '', () => this.toggleMeters(), 'secondary', 16);
     this.add
       .text(
-        GAME_WIDTH - 24,
-        28,
+        GAME_WIDTH / 2,
+        54,
         `${COURSES[difficulty].label}　STAGE ${stageIndex + 1} / ${stages.length}`,
-        textStyle(16, TEXT_COLORS.subInk),
+        textStyle(14, TEXT_COLORS.subInk),
       )
-      .setOrigin(1, 0.5);
-    this.add.text(GAME_WIDTH / 2, 58, `お題：${this.stage.name}`, textStyle(26, TEXT_COLORS.ink, 'mincho')).setOrigin(0.5);
+      .setOrigin(0.5);
+    this.add.text(GAME_WIDTH / 2, 82, `お題：${this.stage.name}`, textStyle(26, TEXT_COLORS.ink, 'mincho')).setOrigin(0.5);
 
     this.createSwatches();
     this.createMeters();
@@ -128,32 +145,60 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createSwatches(): void {
-    const leftX = 130;
-    const rightX = CURRENT_SWATCH_X;
     // 比べやすいよう、2つの色は同じ台・同じ大きさ・同じふちで並べる
-    this.add.rectangle(GAME_WIDTH / 2, SWATCH_Y, 440, SWATCH_SIZE + 30).setRounded(12).setFillStyle(COLORS.viewingStage);
-    this.add.text(leftX, 82, 'お題の色', textStyle(16, TEXT_COLORS.subInk)).setOrigin(0.5);
-    this.add.text(rightX, 82, '現在の色', textStyle(16, TEXT_COLORS.subInk)).setOrigin(0.5);
-    this.add.rectangle(leftX, SWATCH_Y, SWATCH_SIZE, SWATCH_SIZE, toHex(this.target)).setStrokeStyle(3, COLORS.chipMat);
-    this.currentSwatch = this.add
-      .rectangle(rightX, SWATCH_Y, SWATCH_SIZE, SWATCH_SIZE, COLORS.line)
-      .setStrokeStyle(3, COLORS.chipMat);
-    this.unmixedLabel = this.add.text(rightX, SWATCH_Y, '未調色', textStyle(22, TEXT_COLORS.subInk)).setOrigin(0.5);
+    this.swatchStage = this.add.rectangle(GAME_WIDTH / 2, 0, 440, 0).setFillStyle(COLORS.viewingStage);
+    this.swatchLabels = [
+      this.add.text(TARGET_SWATCH_X, 0, 'お題の色', textStyle(16, TEXT_COLORS.subInk)).setOrigin(0.5),
+      this.add.text(CURRENT_SWATCH_X, 0, '現在の色', textStyle(16, TEXT_COLORS.subInk)).setOrigin(0.5),
+    ];
+    this.targetSwatch = this.add.rectangle(TARGET_SWATCH_X, 0, 0, 0, toHex(this.target)).setStrokeStyle(3, COLORS.chipMat);
+    this.currentSwatch = this.add.rectangle(CURRENT_SWATCH_X, 0, 0, 0, COLORS.line).setStrokeStyle(3, COLORS.chipMat);
+    this.unmixedLabel = this.add.text(CURRENT_SWATCH_X, 0, '未調色', textStyle(22, TEXT_COLORS.subInk)).setOrigin(0.5);
+  }
+
+  private get swatchLayout(): { width: number; height: number; stageTop: number } {
+    return this.run.metersShown ? SWATCH_LAYOUTS.withMeters : SWATCH_LAYOUTS.withoutMeters;
+  }
+
+  private get swatchY(): number {
+    const { height, stageTop } = this.swatchLayout;
+    return stageTop + SWATCH_STAGE_PADDING + height / 2;
+  }
+
+  private layoutSwatches(): void {
+    const { width, height, stageTop } = this.swatchLayout;
+    const y = this.swatchY;
+    for (const label of this.swatchLabels) label.setY(stageTop - SWATCH_LABEL_GAP);
+    this.swatchStage
+      .setSize(440, height + SWATCH_STAGE_PADDING * 2)
+      .setY(y)
+      .setRounded(12);
+    this.targetSwatch.setSize(width, height).setY(y);
+    this.currentSwatch.setSize(width, height).setY(y);
+    this.unmixedLabel.setY(y);
   }
 
   private createMeters(): void {
     const discX = 230;
     const barX = 390;
-    this.add.text(24, METER_Y - METER_RADIUS, '色相と彩度', textStyle(16));
-    this.add.text(24, METER_Y - METER_RADIUS + 26, '外ほど鮮やか\n中心ほどくすむ', {
+    const discTitle = this.add.text(24, METER_Y - METER_RADIUS, '色相と彩度', textStyle(16));
+    const discNote = this.add.text(24, METER_Y - METER_RADIUS + 26, '外ほど鮮やか\n中心ほどくすむ', {
       ...textStyle(13, TEXT_COLORS.subInk),
       lineSpacing: 4,
     });
-    this.colorDisc = new ColorDisc(this, discX, METER_Y);
-    this.hintButton = new TextButton(this, 74, METER_Y + 42, 100, 40, 'ヒント', () => this.toggleTarget(), 'secondary');
-    this.add.text(barX, METER_Y - METER_RADIUS, '明度', textStyle(16)).setOrigin(0.5, 0);
+    this.colorDisc = new ColorDisc(this, discX, METER_Y, this.target);
+    const barTitle = this.add.text(barX, METER_Y - METER_RADIUS, '明度', textStyle(16)).setOrigin(0.5, 0);
     const barTop = METER_Y - METER_RADIUS + 36;
-    this.lightnessBar = new LightnessBar(this, barX, barTop, METER_Y + METER_RADIUS - barTop);
+    this.lightnessBar = new LightnessBar(this, barX, barTop, METER_Y + METER_RADIUS - barTop, this.target);
+    // 軌跡の点は1つずつ visible を切り替えているので、まとめて隠すのは Layer に任せる
+    this.meterLayer = this.add.layer([
+      discTitle,
+      discNote,
+      barTitle,
+      ...this.colorDisc.objects,
+      ...this.lightnessBar.objects,
+    ]);
+    this.showMeters(this.run.metersShown);
   }
 
   private createPigmentButtons(): void {
@@ -175,13 +220,17 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  private toggleTarget(): void {
+  private toggleMeters(): void {
     if (this.leaving) return;
-    this.targetShown = !this.targetShown;
-    const target = this.targetShown ? this.target : null;
-    this.colorDisc.showTarget(target);
-    this.lightnessBar.showTarget(target);
-    this.hintButton.setText(this.targetShown ? '隠す' : 'ヒント');
+    this.showMeters(!this.run.metersShown);
+  }
+
+  // 再挑戦や次のステージにも持ち越すため、通しプレイのデータに書き戻す
+  private showMeters(shown: boolean): void {
+    this.run = { ...this.run, metersShown: shown };
+    this.meterLayer.setVisible(shown);
+    this.hintButton.setText(shown ? '隠す' : 'ヒント');
+    this.layoutSwatches();
   }
 
   private handleAddDrop(pigment: Pigment): void {
@@ -274,13 +323,14 @@ export class GameScene extends Phaser.Scene {
     button.circle.setScale(1);
     this.tweens.add({ targets: button.circle, scale: 0.88, duration: 70, yoyo: true });
 
-    const landingX = CURRENT_SWATCH_X + Phaser.Math.Between(-50, 50);
+    const { width, height } = this.swatchLayout;
+    const landingX = CURRENT_SWATCH_X + Phaser.Math.Between(-(width / 2 - 30), width / 2 - 30);
     const drop = this.add
-      .circle(landingX, SWATCH_Y - SWATCH_SIZE / 2 - 4, 11, toHex(PIGMENT_COLORS[pigment]))
+      .circle(landingX, this.swatchY - height / 2 - 4, 11, toHex(PIGMENT_COLORS[pigment]))
       .setStrokeStyle(1.5, COLORS.ink, 0.3);
     this.tweens.add({
       targets: drop,
-      y: SWATCH_Y + Phaser.Math.Between(-30, 30),
+      y: this.swatchY + Phaser.Math.Between(-(height / 2 - 50), height / 2 - 50),
       duration: DROP_FALL_MS,
       ease: 'Quad.easeIn',
       onComplete: () => {

@@ -149,23 +149,39 @@ it('5ステージを終えると結果発表へ進み、再挑戦した結果は
   expect(errors).toEqual([]);
 });
 
-it('「ヒント」を押すと、色相環と明度バーにお題の位置が出て、もう一度押すと消える', async () => {
+it('「ヒント」で色相環と明度バーをお題の位置ごと出し入れでき、出した状態は次のステージへ持ち越す', async () => {
   press(await waitForScene('TitleScene'), '初級');
-  const gameScene = await waitForScene('GameScene');
-  const { stage } = gameScene as unknown as { stage: Stage };
-  const targetHex = toHex(targetColorOf(stage));
-  // お題の色見本と区別するため、小さい四角だけを数える
-  const visibleMarkers = () =>
-    gameScene.children.list.filter(
-      (object) =>
-        object instanceof Phaser.GameObjects.Rectangle && object.visible && object.fillColor === targetHex && object.width < 20,
-    ).length;
+  const meterLayerOf = (scene: Phaser.Scene) => (scene as unknown as { meterLayer: Phaser.GameObjects.Layer }).meterLayer;
+  const hasTargetMarker = (scene: Phaser.Scene) => {
+    const targetHex = toHex(targetColorOf((scene as unknown as { stage: Stage }).stage));
+    // お題の色見本と区別するため、小さい四角だけを数える
+    const markers = meterLayerOf(scene)
+      .getChildren()
+      .filter((object) => object instanceof Phaser.GameObjects.Rectangle && object.fillColor === targetHex && object.width < 20);
+    return markers.length === 2;
+  };
 
-  expect(visibleMarkers()).toBe(0);
+  const swatchHeightOf = (scene: Phaser.Scene) =>
+    (scene as unknown as { currentSwatch: Phaser.GameObjects.Rectangle }).currentSwatch.height;
+
+  const gameScene = await waitForScene('GameScene');
+  expect(meterLayerOf(gameScene).visible).toBe(false);
+  const heightWithoutMeters = swatchHeightOf(gameScene);
   press(gameScene, 'ヒント');
-  expect(visibleMarkers()).toBe(2);
+  expect(meterLayerOf(gameScene).visible).toBe(true);
+  // 隠している間は、空いた場所まで色見本を伸ばしている
+  expect(swatchHeightOf(gameScene)).toBeLessThan(heightWithoutMeters);
+  expect(hasTargetMarker(gameScene)).toBe(true);
   press(gameScene, '隠す');
-  expect(visibleMarkers()).toBe(0);
+  expect(meterLayerOf(gameScene).visible).toBe(false);
+  press(gameScene, 'ヒント');
+
+  press(gameScene, '緑');
+  press(gameScene, '完成！');
+  press(await waitForScene('ResultScene'), '次のステージ');
+  const nextScene = await waitForScene('GameScene');
+  expect(meterLayerOf(nextScene).visible).toBe(true);
+  expect(hasTargetMarker(nextScene)).toBe(true);
   expect(errors).toEqual([]);
 });
 

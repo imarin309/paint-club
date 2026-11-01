@@ -74,6 +74,10 @@ export class ColorTrail {
     return this;
   }
 
+  get objects(): Phaser.GameObjects.GameObject[] {
+    return [this.lines, ...this.points];
+  }
+
   private moveHead(headPoint: Phaser.GameObjects.Arc, position: Point): void {
     this.displayedHead = position;
     headPoint.setPosition(position.x, position.y);
@@ -98,20 +102,8 @@ export class ColorTrail {
  * お題の位置。色見本と同じ四角にして、丸い軌跡の点と見分けられるようにする。
  * 軌跡より先に作ると、混ぜた色がお題に重なったときに軌跡の点が上に描かれる
  */
-export class TargetMarker {
-  private readonly marker: Phaser.GameObjects.Rectangle;
-  private readonly project: (color: RgbColor) => Point;
-
-  constructor(scene: Phaser.Scene, project: (color: RgbColor) => Point) {
-    this.project = project;
-    this.marker = scene.add.rectangle(0, 0, TARGET_MARKER_SIZE, TARGET_MARKER_SIZE).setVisible(false);
-  }
-
-  show(color: RgbColor | null): this {
-    this.marker.setVisible(color !== null);
-    if (!color) return this;
-    const { x, y } = this.project(color);
-    this.marker.setPosition(x, y).setFillStyle(toHex(color)).setStrokeStyle(2, COLORS.ink, 0.9);
-    return this;
-  }
+export function addTargetMarker(scene: Phaser.Scene, { x, y }: Point, color: RgbColor): Phaser.GameObjects.Rectangle {
+  return scene.add
+    .rectangle(x, y, TARGET_MARKER_SIZE, TARGET_MARKER_SIZE, toHex(color))
+    .setStrokeStyle(2, COLORS.ink, 0.9);
 }
