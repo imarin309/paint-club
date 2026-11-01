@@ -75,8 +75,31 @@ describe('mixColor', () => {
 const ALL_STAGES = DIFFICULTIES.flatMap((difficulty) => COURSES[difficulty].stages.map((stage) => ({ difficulty, ...stage })));
 
 describe('COURSES', () => {
-  it.each(DIFFICULTIES)('%s は50問ある', (difficulty) => {
-    expect(COURSES[difficulty].stages).toHaveLength(50);
+  it.each([
+    ['beginner', 15],
+    ['intermediate', 23],
+    ['advanced', 21],
+  ] as const)('%s は%i問ある', (difficulty, count) => {
+    expect(COURSES[difficulty].stages).toHaveLength(count);
+  });
+
+  it('初級は、どれも違う2色を1滴ずつ混ぜる', () => {
+    for (const { recipe } of COURSES.beginner.stages) {
+      expect(recipe).toHaveLength(2);
+      expect(recipe[0]).not.toBe(recipe[1]);
+    }
+  });
+
+  it.each(COURSES.intermediate.stages)('中級の $name は3〜4滴で、初級にない塗料を使う', ({ recipe }) => {
+    expect(recipe.length).toBeGreaterThanOrEqual(3);
+    expect(recipe.length).toBeLessThanOrEqual(4);
+    expect(recipe.some((pigment) => !COURSES.beginner.pigments.includes(pigment))).toBe(true);
+  });
+
+  it.each(COURSES.advanced.stages)('上級の $name は3〜4色・5〜8滴を混ぜる', ({ recipe }) => {
+    expect(new Set(recipe).size).toBeGreaterThanOrEqual(3);
+    expect(new Set(recipe).size).toBeLessThanOrEqual(4);
+    expect(recipe.length).toBeGreaterThanOrEqual(5);
   });
 
   it('ID とお題名は、難易度をまたいでも重複しない', () => {
@@ -99,11 +122,15 @@ describe('COURSES', () => {
   });
 
   // 色が近すぎると、名前が違うだけの同じお題になってしまう
-  it.each(DIFFICULTIES)('%s のお題どうしは、見て分かるほど色が違う', (difficulty) => {
+  it.each([
+    ['beginner', 8],
+    ['intermediate', 20],
+    ['advanced', 20],
+  ] as const)('%s のお題どうしは、ΔE %i 以上離れている', (difficulty, minDeltaE) => {
     const targets = COURSES[difficulty].stages.map(targetColorOf);
     for (let i = 0; i < targets.length; i++) {
       for (let j = i + 1; j < targets.length; j++) {
-        expect(deltaE(targets[i], targets[j])).toBeGreaterThanOrEqual(8);
+        expect(deltaE(targets[i], targets[j])).toBeGreaterThanOrEqual(minDeltaE);
       }
     }
   });
