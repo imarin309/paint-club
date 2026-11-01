@@ -22,7 +22,9 @@ beforeEach(() => {
   window.addEventListener('error', recordError);
   // jsdom には public/ を配信するサーバーがなく、画像の読み込みは何も言わずに失敗する。
   // 手元でたまたま動いているサーバーに結果を左右されないよう、通信せずに空のテクスチャで代える
+  // タイトルへ戻ると preload がもう一度走る。本物の Loader と同じく、読み込み済みなら何もしない
   vi.spyOn(TitleScene.prototype, 'preload').mockImplementation(function (this: TitleScene) {
+    if (this.textures.exists(CHARACTER_TEXTURE)) return;
     this.textures.addCanvas(CHARACTER_TEXTURE, document.createElement('canvas'));
   });
   game = new Phaser.Game({
@@ -137,5 +139,25 @@ it('5ステージを終えると結果発表へ進み、再挑戦した結果は
       results: [],
     }),
   );
+  expect(errors).toEqual([]);
+});
+
+it('プレイ中に「タイトルへ」を押すと確認が出て、やめれば続けられ、戻ればタイトルへ戻る', async () => {
+  press(await waitForScene('TitleScene'), '初級');
+  const gameScene = await waitForScene('GameScene');
+  const hasText = (label: string) =>
+    gameScene.children.list.some((object) => object instanceof Phaser.GameObjects.Text && object.text === label);
+  const confirmMessage = 'タイトルに戻りますか？\nここまでの結果は消えます';
+
+  press(gameScene, 'タイトルへ');
+  expect(hasText(confirmMessage)).toBe(true);
+  press(gameScene, 'やめる');
+  expect(hasText(confirmMessage)).toBe(false);
+  press(gameScene, '緑');
+  expect((gameScene as unknown as { round: { history: string[] } }).round.history).toEqual(['green']);
+
+  press(gameScene, 'タイトルへ');
+  press(gameScene, '戻る');
+  await waitForScene('TitleScene');
   expect(errors).toEqual([]);
 });

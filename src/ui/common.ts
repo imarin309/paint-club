@@ -79,10 +79,11 @@ export class TextButton {
     text: string,
     onPress: () => void,
     variant: ButtonVariant = 'primary',
+    fontSize = 24,
   ) {
     this.variant = variant;
     this.background = scene.add.rectangle(x, y, width, height).setRounded(12).setInteractive({ useHandCursor: true });
-    this.label = scene.add.text(x, y, text, textStyle(24)).setOrigin(0.5);
+    this.label = scene.add.text(x, y, text, textStyle(fontSize)).setOrigin(0.5);
     this.background.on('pointerdown', () => {
       if (this.enabled) onPress();
     });
