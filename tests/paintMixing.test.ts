@@ -75,8 +75,19 @@ describe('mixColor', () => {
 const ALL_STAGES = DIFFICULTIES.flatMap((difficulty) => COURSES[difficulty].stages.map((stage) => ({ difficulty, ...stage })));
 
 describe('COURSES', () => {
-  it.each(DIFFICULTIES)('%s は50問ある', (difficulty) => {
-    expect(COURSES[difficulty].stages).toHaveLength(50);
+  it.each([
+    ['beginner', 15],
+    ['intermediate', 50],
+    ['advanced', 50],
+  ] as const)('%s は%i問ある', (difficulty, count) => {
+    expect(COURSES[difficulty].stages).toHaveLength(count);
+  });
+
+  it('初級は、どれも違う2色を1滴ずつ混ぜる', () => {
+    for (const { recipe } of COURSES.beginner.stages) {
+      expect(recipe).toHaveLength(2);
+      expect(recipe[0]).not.toBe(recipe[1]);
+    }
   });
 
   it('ID とお題名は、難易度をまたいでも重複しない', () => {
