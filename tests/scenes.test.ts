@@ -3,6 +3,7 @@
 // @vitest-environment-options {"resources":"usable"}
 import Phaser from 'phaser';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { mixColor } from '../src/domain/paintMixing.ts';
 import { formatRecipe } from '../src/domain/recipe.ts';
 import { targetColorOf } from '../src/domain/stages.ts';
 import type { Stage } from '../src/domain/types.ts';
@@ -205,5 +206,24 @@ it('プレイ中に「タイトルへ」を押すと確認が出て、続けれ�
   press(gameScene, 'タイトルへ');
   press(gameScene, 'やめる');
   await waitForScene('TitleScene');
+  expect(errors).toEqual([]);
+});
+
+it('滴の落下中に「ヒント」を押しても、滴は残らず、現在の色は確定した色に追いつく', async () => {
+  press(await waitForScene('TitleScene'), '初級');
+  const gameScene = await waitForScene('GameScene');
+  const internals = gameScene as unknown as {
+    drops: Set<Phaser.GameObjects.Arc>;
+    currentSwatch: Phaser.GameObjects.Rectangle;
+  };
+
+  press(gameScene, '緑');
+  expect(internals.drops.size).toBe(1);
+  press(gameScene, 'ヒント');
+  expect(internals.drops.size).toBe(0);
+
+  const settled = mixColor(['green']);
+  if (!settled) throw new Error('緑1滴の色が作れません');
+  await vi.waitFor(() => expect(internals.currentSwatch.fillColor).toBe(toHex(settled)));
   expect(errors).toEqual([]);
 });

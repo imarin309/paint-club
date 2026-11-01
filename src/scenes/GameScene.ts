@@ -94,6 +94,7 @@ export class GameScene extends Phaser.Scene {
   private undoButton!: TextButton;
   private completeButton!: TextButton;
   private pigmentButtons: PigmentButton[] = [];
+  private drops = new Set<Phaser.GameObjects.Arc>();
   private quitConfirmObjects: Phaser.GameObjects.GameObject[] = [];
 
   constructor() {
@@ -110,6 +111,7 @@ export class GameScene extends Phaser.Scene {
     this.displayedColor = null;
     this.colorTween = undefined;
     this.pigmentButtons = [];
+    this.drops = new Set();
     this.swatchLabels = [];
     this.quitConfirmObjects = [];
   }
@@ -231,6 +233,18 @@ export class GameScene extends Phaser.Scene {
     this.meterLayer.setVisible(shown);
     this.hintButton.setText(shown ? '隠す' : 'ヒント');
     this.layoutSwatches();
+    this.finishDropsEarly();
+  }
+
+  // 落下中の滴は、動かす前の色見本へ向かっていて外に着地してしまう。演出を打ち切り、確定した色へ追いつかせる
+  private finishDropsEarly(): void {
+    if (this.drops.size === 0) return;
+    for (const drop of this.drops) {
+      this.tweens.killTweensOf(drop);
+      drop.destroy();
+    }
+    this.drops.clear();
+    this.transitionToCurrentColor();
   }
 
   private handleAddDrop(pigment: Pigment): void {
@@ -328,13 +342,24 @@ export class GameScene extends Phaser.Scene {
     const drop = this.add
       .circle(landingX, this.swatchY - height / 2 - 4, 11, toHex(PIGMENT_COLORS[pigment]))
       .setStrokeStyle(1.5, COLORS.ink, 0.3);
+    this.drops.add(drop);
     this.tweens.add({
       targets: drop,
       y: this.swatchY + Phaser.Math.Between(-(height / 2 - 50), height / 2 - 50),
       duration: DROP_FALL_MS,
       ease: 'Quad.easeIn',
       onComplete: () => {
-        this.tweens.add({ targets: drop, scaleX: 2.2, scaleY: 0.6, alpha: 0, duration: 180, onComplete: () => drop.destroy() });
+        this.tweens.add({
+          targets: drop,
+          scaleX: 2.2,
+          scaleY: 0.6,
+          alpha: 0,
+          duration: 180,
+          onComplete: () => {
+            this.drops.delete(drop);
+            drop.destroy();
+          },
+        });
         this.transitionToCurrentColor();
       },
     });
