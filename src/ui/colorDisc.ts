@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { HUE_ANCHORS, chromaOf, hueAngle, labToRgb, rgbToLab } from '../domain/scoring.ts';
 import type { RgbColor } from '../domain/types.ts';
-import { ColorTrail, type Point } from './colorTrail.ts';
+import { ColorTrail, type Point, TargetMarker } from './colorTrail.ts';
 import { COLORS, TEXT_COLORS, textStyle, toHex } from './common.ts';
 
 const RADIUS = 70;
@@ -20,6 +20,7 @@ const ANCHOR_LABEL_OFFSET = 16;
  * ヒントの「〜寄り」と向きが揃うよう、HSV ではなく Lab を使い、b 軸（黄）を上に向ける。
  */
 export class ColorDisc {
+  private readonly targetMarker: TargetMarker;
   private readonly trail: ColorTrail;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
@@ -49,14 +50,21 @@ export class ColorDisc {
       scene.add.text(labelX, labelY, anchor.name.slice(0, 1), textStyle(14, TEXT_COLORS.subInk)).setOrigin(0.5);
     }
 
-    this.trail = new ColorTrail(scene, (color) => {
+    const project = (color: RgbColor): Point => {
       const lab = rgbToLab(color);
       return toPoint(hueAngle(lab), (RADIUS * Math.min(chromaOf(lab), FULL_CHROMA)) / FULL_CHROMA);
-    });
+    };
+    this.targetMarker = new TargetMarker(scene, project);
+    this.trail = new ColorTrail(scene, project);
   }
 
   show(colors: readonly RgbColor[]): this {
     this.trail.show(colors);
+    return this;
+  }
+
+  showTarget(color: RgbColor | null): this {
+    this.targetMarker.show(color);
     return this;
   }
 }

@@ -4,11 +4,13 @@
 import Phaser from 'phaser';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { formatRecipe } from '../src/domain/recipe.ts';
+import { targetColorOf } from '../src/domain/stages.ts';
+import type { Stage } from '../src/domain/types.ts';
 import { FinalResultScene } from '../src/scenes/FinalResultScene.ts';
 import { GameScene, type GameSceneData, type RoundResult } from '../src/scenes/GameScene.ts';
 import { ResultScene } from '../src/scenes/ResultScene.ts';
 import { TitleScene } from '../src/scenes/TitleScene.ts';
-import { CHARACTER_TEXTURE } from '../src/ui/common.ts';
+import { CHARACTER_TEXTURE, toHex } from '../src/ui/common.ts';
 
 // Phaser の更新で、型は通るのに実行時に壊れる退行を拾うためのテスト。描画結果までは見ない
 
@@ -45,17 +47,22 @@ async function waitForScene(key: string): Promise<Phaser.Scene> {
   return game.scene.getScene(key);
 }
 
-// ボタンの実装に依存しないよう、ラベルの文字から一番近い押せる図形を押す
+// ボタンの実装に依存しないよう、ラベルの文字から一番近い押せる図形を押す。
+// 色相環の目印と絵の具のように同じ文字が複数あるときは、押せる図形に一番近い文字をラベルとみなす
 function press(scene: Phaser.Scene, label: string): void {
   const objects = scene.children.list;
-  const text = objects.find((object) => object instanceof Phaser.GameObjects.Text && object.text === label);
-  if (!(text instanceof Phaser.GameObjects.Text)) throw new Error(`「${label}」が見つかりません`);
-  const distance = (object: Phaser.GameObjects.GameObject) =>
-    object instanceof Phaser.GameObjects.Shape ? Phaser.Math.Distance.Between(object.x, object.y, text.x, text.y) : Infinity;
-  const target = objects
-    .filter((object) => object.input?.enabled)
-    .reduce((nearest, object) => (distance(object) < distance(nearest) ? object : nearest));
-  target.emit('pointerdown');
+  const texts = objects.filter(
+    (object): object is Phaser.GameObjects.Text => object instanceof Phaser.GameObjects.Text && object.text === label,
+  );
+  if (texts.length === 0) throw new Error(`「${label}」が見つかりません`);
+  const interactives = objects.filter(
+    (object): object is Phaser.GameObjects.Shape => object instanceof Phaser.GameObjects.Shape && !!object.input?.enabled,
+  );
+  const candidates = texts.flatMap((text) =>
+    interactives.map((shape) => ({ shape, distance: Phaser.Math.Distance.Between(shape.x, shape.y, text.x, text.y) })),
+  );
+  const nearest = candidates.reduce((best, candidate) => (candidate.distance < best.distance ? candidate : best));
+  nearest.shape.emit('pointerdown');
 }
 
 it('タイトルで難易度を選んで調色し、結果を見て次のステージへ進める', async () => {
@@ -137,5 +144,25 @@ it('5ステージを終えると結果発表へ進み、再挑戦した結果は
       results: [],
     }),
   );
+  expect(errors).toEqual([]);
+});
+
+it('「ヒント」を押すと、色相環と明度バーにお題の位置が出て、もう一度押すと消える', async () => {
+  press(await waitForScene('TitleScene'), '初級');
+  const gameScene = await waitForScene('GameScene');
+  const { stage } = gameScene as unknown as { stage: Stage };
+  const targetHex = toHex(targetColorOf(stage));
+  // お題の色見本と区別するため、小さい四角だけを数える
+  const visibleMarkers = () =>
+    gameScene.children.list.filter(
+      (object) =>
+        object instanceof Phaser.GameObjects.Rectangle && object.visible && object.fillColor === targetHex && object.width < 20,
+    ).length;
+
+  expect(visibleMarkers()).toBe(0);
+  press(gameScene, 'ヒント');
+  expect(visibleMarkers()).toBe(2);
+  press(gameScene, '隠す');
+  expect(visibleMarkers()).toBe(0);
   expect(errors).toEqual([]);
 });

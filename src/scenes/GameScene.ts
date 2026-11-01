@@ -63,6 +63,7 @@ export class GameScene extends Phaser.Scene {
   private round: RoundState = createRound();
   private target: RgbColor = { r: 0, g: 0, b: 0 };
   private leaving = false;
+  private targetShown = false;
 
   private displayedColor: RgbColor | null = null;
   private colorTween?: Phaser.Tweens.Tween;
@@ -73,6 +74,7 @@ export class GameScene extends Phaser.Scene {
   private lightnessBar!: LightnessBar;
   private dropDots!: DropDots;
   private dropsText!: Phaser.GameObjects.Text;
+  private hintButton!: TextButton;
   private undoButton!: TextButton;
   private completeButton!: TextButton;
   private pigmentButtons: PigmentButton[] = [];
@@ -88,6 +90,7 @@ export class GameScene extends Phaser.Scene {
     this.round = createRound();
     this.target = targetColorOf(this.stage);
     this.leaving = false;
+    this.targetShown = false;
     this.displayedColor = null;
     this.colorTween = undefined;
     this.pigmentButtons = [];
@@ -140,6 +143,7 @@ export class GameScene extends Phaser.Scene {
       lineSpacing: 4,
     });
     this.colorDisc = new ColorDisc(this, discX, METER_Y);
+    this.hintButton = new TextButton(this, 74, METER_Y + 42, 100, 40, 'ヒント', () => this.toggleTarget(), 'secondary');
     this.add.text(barX, METER_Y - METER_RADIUS, '明度', textStyle(16)).setOrigin(0.5, 0);
     const barTop = METER_Y - METER_RADIUS + 36;
     this.lightnessBar = new LightnessBar(this, barX, barTop, METER_Y + METER_RADIUS - barTop);
@@ -162,6 +166,15 @@ export class GameScene extends Phaser.Scene {
       circle.on('pointerdown', () => this.handleAddDrop(pigment));
       this.pigmentButtons.push({ pigment, circle, label });
     });
+  }
+
+  private toggleTarget(): void {
+    if (this.leaving) return;
+    this.targetShown = !this.targetShown;
+    const target = this.targetShown ? this.target : null;
+    this.colorDisc.showTarget(target);
+    this.lightnessBar.showTarget(target);
+    this.hintButton.setText(this.targetShown ? '隠す' : 'ヒント');
   }
 
   private handleAddDrop(pigment: Pigment): void {

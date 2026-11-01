@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
 import { labToRgb, rgbToLab } from '../domain/scoring.ts';
 import type { RgbColor } from '../domain/types.ts';
-import { ColorTrail } from './colorTrail.ts';
+import { ColorTrail, type Point, TargetMarker } from './colorTrail.ts';
 import { COLORS, TEXT_COLORS, textStyle, toHex } from './common.ts';
 
 const WIDTH = 12;
@@ -9,6 +9,7 @@ const STEPS = 20;
 
 /** 色の円盤と同じく Lab で測る。白が上、黒が下 */
 export class LightnessBar {
+  private readonly targetMarker: TargetMarker;
   private readonly trail: ColorTrail;
 
   constructor(scene: Phaser.Scene, x: number, top: number, height: number) {
@@ -23,11 +24,18 @@ export class LightnessBar {
     scene.add.text(x + WIDTH, top, '明', textStyle(14, TEXT_COLORS.subInk)).setOrigin(0, 0.5);
     scene.add.text(x + WIDTH, top + height, '暗', textStyle(14, TEXT_COLORS.subInk)).setOrigin(0, 0.5);
 
-    this.trail = new ColorTrail(scene, (color) => ({ x, y: top + height * (1 - rgbToLab(color).l / 100) }));
+    const project = (color: RgbColor): Point => ({ x, y: top + height * (1 - rgbToLab(color).l / 100) });
+    this.targetMarker = new TargetMarker(scene, project);
+    this.trail = new ColorTrail(scene, project);
   }
 
   show(colors: readonly RgbColor[]): this {
     this.trail.show(colors);
+    return this;
+  }
+
+  showTarget(color: RgbColor | null): this {
+    this.targetMarker.show(color);
     return this;
   }
 }

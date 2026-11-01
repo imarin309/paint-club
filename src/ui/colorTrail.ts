@@ -11,6 +11,7 @@ const HEAD_RADIUS = 7;
 const FADE_STEP = 0.15;
 const MIN_ALPHA = 0.35;
 const MOVE_MS = 260;
+const TARGET_MARKER_SIZE = 13;
 
 /** 1滴ごとの混色を、project で決めた位置に点と線で並べる。最新の点は1つ前の位置から動かす */
 export class ColorTrail {
@@ -90,5 +91,27 @@ export class ColorTrail {
       this.lines.lineTo(point.x, point.y);
     }
     this.lines.strokePath();
+  }
+}
+
+/**
+ * お題の位置。色見本と同じ四角にして、丸い軌跡の点と見分けられるようにする。
+ * 軌跡より先に作ると、混ぜた色がお題に重なったときに軌跡の点が上に描かれる
+ */
+export class TargetMarker {
+  private readonly marker: Phaser.GameObjects.Rectangle;
+  private readonly project: (color: RgbColor) => Point;
+
+  constructor(scene: Phaser.Scene, project: (color: RgbColor) => Point) {
+    this.project = project;
+    this.marker = scene.add.rectangle(0, 0, TARGET_MARKER_SIZE, TARGET_MARKER_SIZE).setVisible(false);
+  }
+
+  show(color: RgbColor | null): this {
+    this.marker.setVisible(color !== null);
+    if (!color) return this;
+    const { x, y } = this.project(color);
+    this.marker.setPosition(x, y).setFillStyle(toHex(color)).setStrokeStyle(2, COLORS.ink, 0.9);
+    return this;
   }
 }
