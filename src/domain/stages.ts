@@ -33,7 +33,7 @@ const INTERMEDIATE_STAGES: readonly Stage[] = [
   { id: 'intermediate-03', name: 'ビーツ', recipe: ['red', 'red', 'lightBlue', 'purple'] },
   { id: 'intermediate-04', name: '真紅', recipe: ['red', 'red', 'purple'] },
   { id: 'intermediate-05', name: 'テラコッタ', recipe: ['orange', 'purple', 'white'] },
-  { id: 'intermediate-06', name: '緋色', recipe: ['red', 'red', 'red', 'orange'] },
+  { id: 'intermediate-06', name: '柿色', recipe: ['red', 'orange', 'white'] },
   { id: 'intermediate-07', name: 'しょうゆ', recipe: ['red', 'orange', 'black'] },
   { id: 'intermediate-08', name: 'かりんとう', recipe: ['orange', 'orange', 'orange', 'black'] },
   { id: 'intermediate-09', name: 'ミルクティー', recipe: ['yellow', 'purple', 'white', 'white'] },
@@ -46,9 +46,9 @@ const INTERMEDIATE_STAGES: readonly Stage[] = [
   { id: 'intermediate-16', name: 'ピーマン', recipe: ['yellow', 'green', 'green', 'lightBlue'] },
   { id: 'intermediate-17', name: 'ひすい', recipe: ['green', 'green', 'lightBlue', 'white'] },
   { id: 'intermediate-18', name: '浅葱色', recipe: ['green', 'lightBlue', 'lightBlue', 'lightBlue'] },
-  { id: 'intermediate-19', name: '夏空', recipe: ['lightBlue', 'lightBlue', 'lightBlue', 'white'] },
+  { id: 'intermediate-19', name: '空色', recipe: ['lightBlue', 'white', 'white'] },
   { id: 'intermediate-20', name: 'あじさい', recipe: ['lightBlue', 'lightBlue', 'purple', 'white'] },
-  { id: 'intermediate-21', name: 'サファイア', recipe: ['lightBlue', 'blue', 'blue', 'blue'] },
+  { id: 'intermediate-21', name: 'サファイア', recipe: ['lightBlue', 'blue', 'blue'] },
   { id: 'intermediate-22', name: '紺青', recipe: ['blue', 'blue', 'purple', 'black'] },
 ];
 
@@ -63,7 +63,6 @@ const ADVANCED_STAGES: readonly Stage[] = [
   { id: 'advanced-07', name: 'あんず', recipe: ['red', 'yellow', 'white', 'white', 'white', 'white', 'white'] },
   { id: 'advanced-08', name: 'ゴールデンイエロー', recipe: ['orange', 'orange', 'orange', 'yellow', 'yellowOchre', 'white', 'white', 'white'] },
   { id: 'advanced-09', name: '卵色', recipe: ['orange', 'yellow', 'white', 'white', 'white', 'white'] },
-  { id: 'advanced-10', name: 'レモン', recipe: ['yellow', 'yellow', 'yellow', 'yellow', 'yellow', 'yellow', 'yellowGreen', 'yellowOchre'] },
   { id: 'advanced-11', name: '青りんご', recipe: ['yellow', 'yellowGreen', 'yellowGreen', 'yellowGreen', 'yellowOchre', 'white', 'white', 'white'] },
   { id: 'advanced-12', name: '抹茶ラテ', recipe: ['yellowGreen', 'lightBlue', 'yellowOchre', 'yellowOchre', 'white', 'white', 'white', 'white'] },
   { id: 'advanced-13', name: '枝豆', recipe: ['yellow', 'yellowGreen', 'yellowGreen', 'green', 'white', 'white', 'white'] },

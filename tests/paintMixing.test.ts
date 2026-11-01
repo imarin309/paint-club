@@ -78,7 +78,7 @@ describe('COURSES', () => {
   it.each([
     ['beginner', 15],
     ['intermediate', 22],
-    ['advanced', 21],
+    ['advanced', 20],
   ] as const)('%s は%i問ある', (difficulty, count) => {
     expect(COURSES[difficulty].stages).toHaveLength(count);
   });
