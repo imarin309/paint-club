@@ -417,8 +417,7 @@ export class GameScene extends Phaser.Scene {
     const used = this.round.history.length;
     this.dropDots.show(this.round.history);
     const limit = used === MAX_DROPS ? '（上限）' : '';
-    const undo = this.round.undoAvailable ? 'あと1回' : '使用済み';
-    this.dropsText.setText(`使用 ${used} / ${MAX_DROPS}滴${limit}　取り消し：${undo}`);
+    this.dropsText.setText(`使用 ${used} / ${MAX_DROPS}滴${limit}`);
 
     const addable = canAddDrop(this.round);
     for (const { circle, label } of this.pigmentButtons) {

@@ -43,17 +43,15 @@ describe('gameRules', () => {
     expect(remainingDrops(undone)).toBe(remainingDrops(state) + 1);
   });
 
-  it('取り消しは1回だけ', () => {
-    const once = undoLastDrop(addDrops(createRound(), ['red', 'blue', 'white']));
-    expect(once.undoAvailable).toBe(false);
-    expect(canUndo(once)).toBe(false);
-    expect(undoLastDrop(once)).toBe(once);
+  it('取り消しは何回でもでき、0滴まで戻せる', () => {
+    const empty = [1, 2, 3].reduce(undoLastDrop, addDrops(createRound(), ['red', 'blue', 'white']));
+    expect(empty.history).toEqual([]);
   });
 
-  it('0滴では取り消せず、取り消し権も減らない', () => {
+  it('0滴では取り消せない', () => {
     const state = createRound();
     expect(canUndo(state)).toBe(false);
-    expect(undoLastDrop(state).undoAvailable).toBe(true);
+    expect(undoLastDrop(state)).toBe(state);
   });
 
   it('取り消し後も再び追加できる', () => {
@@ -68,8 +66,8 @@ describe('gameRules', () => {
     expect(canComplete(done)).toBe(false);
   });
 
-  it('再挑戦すると履歴と取り消し権が初期化される', () => {
+  it('再挑戦すると履歴が初期化される', () => {
     // 再挑戦は新しいラウンドを作り直すことで表す
-    expect(createRound()).toEqual({ history: [], undoAvailable: true, completed: false });
+    expect(createRound()).toEqual({ history: [], completed: false });
   });
 });

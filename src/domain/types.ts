@@ -33,6 +33,5 @@ export type Stage = {
 
 export type RoundState = {
   history: MixHistory;
-  undoAvailable: boolean;
   completed: boolean;
 };
