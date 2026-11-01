@@ -219,27 +219,26 @@ export class GameScene extends Phaser.Scene {
       .setFillStyle(COLORS.surface)
       .setStrokeStyle(2, COLORS.line);
     const message = this.add
-      .text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 45, 'タイトルに戻りますか？\nここまでの結果は消えます', {
+      .text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 45, 'ゲームをやめますか？\nここまでの結果は消えます', {
         ...textStyle(20),
         align: 'center',
         lineSpacing: 8,
       })
       .setOrigin(0.5);
-    const cancelButton = new TextButton(this, GAME_WIDTH / 2 - 85, GAME_HEIGHT / 2 + 55, 150, 52, 'やめる', () =>
-      this.closeQuitConfirm(),
-    );
-    const quitButton = new TextButton(
+    const buttonY = GAME_HEIGHT / 2 + 55;
+    const quitButton = new TextButton(this, GAME_WIDTH / 2 - 85, buttonY, 150, 52, 'やめる', () => this.quitToTitle(), 'secondary');
+    const continueButton = new TextButton(
       this,
       GAME_WIDTH / 2 + 85,
-      GAME_HEIGHT / 2 + 55,
+      buttonY,
       150,
       52,
-      '戻る',
-      () => this.quitToTitle(),
+      '続ける',
+      () => this.closeQuitConfirm(),
       'secondary',
     );
 
-    this.quitConfirmObjects = [backdrop, panel, message, ...cancelButton.objects, ...quitButton.objects];
+    this.quitConfirmObjects = [backdrop, panel, message, ...quitButton.objects, ...continueButton.objects];
   }
 
   private closeQuitConfirm(): void {

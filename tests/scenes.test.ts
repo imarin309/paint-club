@@ -142,22 +142,22 @@ it('5ステージを終えると結果発表へ進み、再挑戦した結果は
   expect(errors).toEqual([]);
 });
 
-it('プレイ中に「タイトルへ」を押すと確認が出て、やめれば続けられ、戻ればタイトルへ戻る', async () => {
+it('プレイ中に「タイトルへ」を押すと確認が出て、続ければそのまま遊べ、やめればタイトルへ戻る', async () => {
   press(await waitForScene('TitleScene'), '初級');
   const gameScene = await waitForScene('GameScene');
   const hasText = (label: string) =>
     gameScene.children.list.some((object) => object instanceof Phaser.GameObjects.Text && object.text === label);
-  const confirmMessage = 'タイトルに戻りますか？\nここまでの結果は消えます';
+  const confirmMessage = 'ゲームをやめますか？\nここまでの結果は消えます';
 
   press(gameScene, 'タイトルへ');
   expect(hasText(confirmMessage)).toBe(true);
-  press(gameScene, 'やめる');
+  press(gameScene, '続ける');
   expect(hasText(confirmMessage)).toBe(false);
   press(gameScene, '緑');
   expect((gameScene as unknown as { round: { history: string[] } }).round.history).toEqual(['green']);
 
   press(gameScene, 'タイトルへ');
-  press(gameScene, '戻る');
+  press(gameScene, 'やめる');
   await waitForScene('TitleScene');
   expect(errors).toEqual([]);
 });
