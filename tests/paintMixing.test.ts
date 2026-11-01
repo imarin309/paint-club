@@ -77,7 +77,7 @@ const ALL_STAGES = DIFFICULTIES.flatMap((difficulty) => COURSES[difficulty].stag
 describe('COURSES', () => {
   it.each([
     ['beginner', 15],
-    ['intermediate', 23],
+    ['intermediate', 22],
     ['advanced', 21],
   ] as const)('%s は%i問ある', (difficulty, count) => {
     expect(COURSES[difficulty].stages).toHaveLength(count);

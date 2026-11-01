@@ -21,7 +21,7 @@ const ROW_FIRST_Y = 113;
 const ROW_SPACING = 80;
 const ROW_HEIGHT = 72;
 const CHIP_SIZE = 40;
-// お題名は長いもの（ウルトラマリンブルーなど）があるので、星に重ならない幅まで縮める
+// お題名は長いもの（ゴールデンイエローなど）があるので、星に重ならない幅まで縮める
 const NAME_MAX_WIDTH = 150;
 const RECIPE_DOT_RADIUS = 4.5;
 const RECIPE_DOT_SPACING = 11;

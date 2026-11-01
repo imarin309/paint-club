@@ -20,16 +20,16 @@ const BEGINNER_STAGES: readonly Stage[] = [
   { id: 'beginner-09', name: '若竹色', recipe: ['green', 'white'] },
   { id: 'beginner-10', name: '森の奥', recipe: ['green', 'black'] },
   { id: 'beginner-11', name: '深い湖', recipe: ['green', 'blue'] },
-  { id: 'beginner-12', name: 'ウルトラマリンブルー', recipe: ['blue', 'white'] },
-  { id: 'beginner-13', name: '濃紺', recipe: ['blue', 'black'] },
-  { id: 'beginner-14', name: 'なす', recipe: ['red', 'blue'] },
+  { id: 'beginner-12', name: 'ヤグルマギク', recipe: ['blue', 'white'] },
+  { id: 'beginner-13', name: 'ネイビーブルー', recipe: ['blue', 'black'] },
+  { id: 'beginner-14', name: 'ブルーベリー', recipe: ['red', 'blue'] },
   { id: 'beginner-15', name: '墨', recipe: ['white', 'black'] },
 ];
 
 // 中級は3〜4滴で、橙・水色・紫のどれかを使う。お題どうしを ΔE 20 以上離し、似た色で数を水増ししない
 const INTERMEDIATE_STAGES: readonly Stage[] = [
   { id: 'intermediate-01', name: '黒豆', recipe: ['red', 'purple', 'black', 'black'] },
-  { id: 'intermediate-02', name: '紫芋アイス', recipe: ['red', 'lightBlue', 'white'] },
+  { id: 'intermediate-02', name: 'ぶどうヨーグルト', recipe: ['red', 'lightBlue', 'white'] },
   { id: 'intermediate-03', name: 'ビーツ', recipe: ['red', 'red', 'lightBlue', 'purple'] },
   { id: 'intermediate-04', name: '真紅', recipe: ['red', 'red', 'purple'] },
   { id: 'intermediate-05', name: 'テラコッタ', recipe: ['orange', 'purple', 'white'] },
@@ -38,7 +38,7 @@ const INTERMEDIATE_STAGES: readonly Stage[] = [
   { id: 'intermediate-08', name: 'かりんとう', recipe: ['orange', 'orange', 'orange', 'black'] },
   { id: 'intermediate-09', name: 'ミルクティー', recipe: ['yellow', 'purple', 'white', 'white'] },
   { id: 'intermediate-10', name: 'はちみつ', recipe: ['orange', 'yellow', 'yellow', 'purple'] },
-  { id: 'intermediate-11', name: 'マリーゴールド', recipe: ['orange', 'yellow', 'yellow', 'yellow'] },
+  { id: 'intermediate-11', name: '山吹色', recipe: ['orange', 'yellow', 'yellow', 'yellow'] },
   { id: 'intermediate-12', name: 'からし', recipe: ['orange', 'yellow', 'yellow', 'lightBlue'] },
   { id: 'intermediate-13', name: 'キウイ', recipe: ['orange', 'yellow', 'yellow', 'green'] },
   { id: 'intermediate-14', name: 'メロン', recipe: ['yellow', 'lightBlue', 'white'] },
@@ -50,7 +50,6 @@ const INTERMEDIATE_STAGES: readonly Stage[] = [
   { id: 'intermediate-20', name: 'あじさい', recipe: ['lightBlue', 'lightBlue', 'purple', 'white'] },
   { id: 'intermediate-21', name: 'サファイア', recipe: ['lightBlue', 'blue', 'blue', 'blue'] },
   { id: 'intermediate-22', name: '紺青', recipe: ['blue', 'blue', 'purple', 'black'] },
-  { id: 'intermediate-23', name: '紫', recipe: ['purple', 'purple', 'purple', 'white'] },
 ];
 
 // 上級は、全12色を使っても MASTER に5滴以上かかる色にする。茶・黄土・黄緑で作れる色は中級の9色でもほぼ作れるため、塗料の数では難しさが変わらない
@@ -66,7 +65,7 @@ const ADVANCED_STAGES: readonly Stage[] = [
   { id: 'advanced-09', name: '卵色', recipe: ['orange', 'yellow', 'white', 'white', 'white', 'white'] },
   { id: 'advanced-10', name: 'レモン', recipe: ['yellow', 'yellow', 'yellow', 'yellow', 'yellow', 'yellow', 'yellowGreen', 'yellowOchre'] },
   { id: 'advanced-11', name: '青りんご', recipe: ['yellow', 'yellowGreen', 'yellowGreen', 'yellowGreen', 'yellowOchre', 'white', 'white', 'white'] },
-  { id: 'advanced-12', name: '若葉色', recipe: ['yellowGreen', 'lightBlue', 'yellowOchre', 'yellowOchre', 'white', 'white', 'white', 'white'] },
+  { id: 'advanced-12', name: '抹茶ラテ', recipe: ['yellowGreen', 'lightBlue', 'yellowOchre', 'yellowOchre', 'white', 'white', 'white', 'white'] },
   { id: 'advanced-13', name: '枝豆', recipe: ['yellow', 'yellowGreen', 'yellowGreen', 'green', 'white', 'white', 'white'] },
   { id: 'advanced-14', name: '新緑', recipe: ['yellowGreen', 'green', 'green', 'white', 'white', 'white', 'white'] },
   { id: 'advanced-15', name: 'ミントアイス', recipe: ['green', 'lightBlue', 'white', 'white', 'white', 'white'] },
@@ -74,7 +73,7 @@ const ADVANCED_STAGES: readonly Stage[] = [
   { id: 'advanced-17', name: 'ネモフィラ', recipe: ['lightBlue', 'blue', 'purple', 'white', 'white', 'white', 'white'] },
   { id: 'advanced-18', name: '瑠璃色', recipe: ['red', 'blue', 'blue', 'blue', 'blue', 'blue', 'blue', 'purple'] },
   { id: 'advanced-19', name: 'すみれ', recipe: ['lightBlue', 'lightBlue', 'purple', 'purple', 'white'] },
-  { id: 'advanced-20', name: 'ラベンダー', recipe: ['lightBlue', 'purple', 'purple', 'yellowOchre', 'white', 'white', 'white'] },
+  { id: 'advanced-20', name: '鳩羽色', recipe: ['lightBlue', 'purple', 'purple', 'yellowOchre', 'white', 'white', 'white'] },
   { id: 'advanced-21', name: 'モーブ', recipe: ['red', 'lightBlue', 'purple', 'purple', 'purple', 'purple', 'white', 'white'] },
 ];
 
