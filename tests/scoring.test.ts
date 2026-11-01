@@ -60,6 +60,15 @@ describe('scoreColor', () => {
     }
   });
 
+  it.each(COURSES.intermediate.stages)('中級の $name は、どの2滴でも MASTER にならない', (stage) => {
+    const { pigments } = COURSES.intermediate;
+    for (const first of pigments) {
+      for (const second of pigments) {
+        expect(scoreColor(targetColorOf(stage), mixColor([first, second])!)).toBeLessThan(90);
+      }
+    }
+  });
+
   it.each(ALL_STAGES)('$name は正解レシピで100点になる', (stage) => {
     const actual = mixColor([...stage.recipe].reverse());
     expect(actual).not.toBeNull();
