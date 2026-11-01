@@ -78,7 +78,7 @@ describe('COURSES', () => {
   it.each([
     ['beginner', 15],
     ['intermediate', 23],
-    ['advanced', 50],
+    ['advanced', 21],
   ] as const)('%s は%i問ある', (difficulty, count) => {
     expect(COURSES[difficulty].stages).toHaveLength(count);
   });
@@ -94,6 +94,12 @@ describe('COURSES', () => {
     expect(recipe.length).toBeGreaterThanOrEqual(3);
     expect(recipe.length).toBeLessThanOrEqual(4);
     expect(recipe.some((pigment) => !COURSES.beginner.pigments.includes(pigment))).toBe(true);
+  });
+
+  it.each(COURSES.advanced.stages)('上級の $name は3〜4色・5〜8滴を混ぜる', ({ recipe }) => {
+    expect(new Set(recipe).size).toBeGreaterThanOrEqual(3);
+    expect(new Set(recipe).size).toBeLessThanOrEqual(4);
+    expect(recipe.length).toBeGreaterThanOrEqual(5);
   });
 
   it('ID とお題名は、難易度をまたいでも重複しない', () => {
@@ -119,7 +125,7 @@ describe('COURSES', () => {
   it.each([
     ['beginner', 8],
     ['intermediate', 20],
-    ['advanced', 8],
+    ['advanced', 20],
   ] as const)('%s のお題どうしは、ΔE %i 以上離れている', (difficulty, minDeltaE) => {
     const targets = COURSES[difficulty].stages.map(targetColorOf);
     for (let i = 0; i < targets.length; i++) {

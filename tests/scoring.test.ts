@@ -12,9 +12,20 @@ import {
   summarizeRun,
 } from '../src/domain/scoring.ts';
 import { COURSES, targetColorOf } from '../src/domain/stages.ts';
-import { DIFFICULTIES, type RgbColor } from '../src/domain/types.ts';
+import { DIFFICULTIES, type MixHistory, type Pigment, type RgbColor } from '../src/domain/types.ts';
 
 const ALL_STAGES = DIFFICULTIES.flatMap((difficulty) => COURSES[difficulty].stages.map((stage) => ({ difficulty, ...stage })));
+
+function mixesUpTo(pigments: readonly Pigment[], maxDrops: number): MixHistory[] {
+  const mixes: MixHistory[] = [];
+  const extend = (from: number, history: Pigment[]) => {
+    if (history.length > 0) mixes.push([...history]);
+    if (history.length === maxDrops) return;
+    for (let i = from; i < pigments.length; i++) extend(i, [...history, pigments[i]]);
+  };
+  extend(0, []);
+  return mixes;
+}
 
 const red: RgbColor = { r: 205, g: 35, b: 45 };
 const blue: RgbColor = { r: 20, g: 80, b: 190 };
@@ -60,12 +71,18 @@ describe('scoreColor', () => {
     }
   });
 
-  it.each(COURSES.intermediate.stages)('中級の $name は、どの2滴でも MASTER にならない', (stage) => {
-    const { pigments } = COURSES.intermediate;
-    for (const first of pigments) {
-      for (const second of pigments) {
-        expect(scoreColor(targetColorOf(stage), mixColor([first, second])!)).toBeLessThan(90);
-      }
+  const SHORT_MIX_LIMITS = [
+    ['intermediate', 2],
+    ['advanced', 4],
+  ] as const;
+  it.each(
+    SHORT_MIX_LIMITS.flatMap(([difficulty, maxDrops]) =>
+      COURSES[difficulty].stages.map((stage) => ({ difficulty, maxDrops, ...stage })),
+    ),
+  )('$name は、その難易度の塗料を $maxDrops 滴以内で混ぜても MASTER にならない', (stage) => {
+    const target = targetColorOf(stage);
+    for (const history of mixesUpTo(COURSES[stage.difficulty].pigments, stage.maxDrops)) {
+      expect(scoreColor(target, mixColor(history)!)).toBeLessThan(90);
     }
   });
 
