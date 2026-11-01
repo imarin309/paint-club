@@ -33,7 +33,11 @@ export const TEXT_COLORS = {
 const TYPEFACES = {
   gothic: '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", Meiryo, sans-serif',
   mincho: '"Hiragino Mincho ProN", "Noto Serif JP", "Yu Mincho", serif',
+  logo: '"Mochiy Pop One", "Hiragino Maru Gothic ProN", sans-serif',
 };
+
+// public/fonts/ のファイルはタイトルの文字だけに絞ってある。タイトルを変えたら作り直す
+export const LOGO_FONT = { family: 'Mochiy Pop One', url: 'fonts/MochiyPopOne-title.woff' };
 type Typeface = keyof typeof TYPEFACES;
 
 export function textStyle(
@@ -93,6 +97,10 @@ export class TextButton {
     this.label.setColor(enabled ? look.text : TEXT_COLORS.disabled);
     if (this.background.input) this.background.input.cursor = enabled ? 'pointer' : 'default';
     return this;
+  }
+
+  get objects(): Phaser.GameObjects.GameObject[] {
+    return [this.background, this.label];
   }
 
   setText(text: string): this {

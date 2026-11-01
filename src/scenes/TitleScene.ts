@@ -2,21 +2,36 @@ import Phaser from 'phaser';
 import { PIGMENT_COLORS } from '../domain/paintMixing.ts';
 import { COURSES } from '../domain/stages.ts';
 import { DIFFICULTIES, type Difficulty, PIGMENTS } from '../domain/types.ts';
-import { CHARACTER_TEXTURE, COLORS, GAME_WIDTH, TEXT_COLORS, TextButton, setupCamera, textStyle, toHex } from '../ui/common.ts';
+import { CHARACTER_TEXTURE, COLORS, GAME_HEIGHT, GAME_WIDTH, LOGO_FONT, TEXT_COLORS, TextButton, setupCamera, textStyle, toHex } from '../ui/common.ts';
 import { newRun } from './GameScene.ts';
 
-const RULES = [
-  'お題と同じ色を、絵の具を混ぜて作ろう。',
-  '絵の具をタップすると、1滴ずつ混ざります。',
-  '使えるのは8滴まで。',
-  '直前の1滴は、1回だけ戻せます。',
-  'できたと思ったら「完成！」で採点します。',
-];
+// 滴の上限や「1滴戻す」「完成！」は、ゲーム画面の表示とボタンで分かるので、ここには書かない
+const GOAL = 'お題と同じ色を絵の具を混ぜて作ろう！';
 
-const TERMS = ['色相　赤み・青みなど、色味の違い', '明度　色の明るさ', '彩度　色の鮮やかさ'];
+// 「2色を1滴ずつ」のように正解の形が分かる書き方は、ヒントになるので避ける
+const DIFFICULTY_NOTES: Record<Difficulty, string> = {
+  beginner: 'まずは2色の組み合わせから',
+  intermediate: '混ぜる割合がカギ',
+  advanced: 'くすんだ色・淡い色に挑戦',
+};
+
+const COLOR_TERMS = [
+  {
+    name: '色相（しきそう）',
+    lines: ['赤み・黄み・青みといった、色味の違い。', '色相の違う絵の具を混ぜると、', 'その間の色味になる。'],
+  },
+  { name: '明度（めいど）', lines: ['色の明るさ。', '白を混ぜると上がり、黒を混ぜると下がる。'] },
+  {
+    name: '彩度（さいど）',
+    // 暗い色に白を混ぜると彩度は上がることがある（現実の絵の具でも、このゲームの混色でも）。
+    // 白・黒については「鮮やかな色に」と条件を付けて、外れない範囲だけを書く
+    lines: ['色の鮮やかさ。', '鮮やかな色に白や黒を混ぜると、下がる。', '補色（色相環で反対側の色）を混ぜると、', 'くすむ。'],
+  },
+];
 
 export class TitleScene extends Phaser.Scene {
   private leaving = false;
+  private helpObjects: Phaser.GameObjects.GameObject[] = [];
 
   constructor() {
     super('TitleScene');
@@ -24,19 +39,20 @@ export class TitleScene extends Phaser.Scene {
 
   init(): void {
     this.leaving = false;
+    this.helpObjects = [];
   }
 
   // 結果画面でも使うので、最初の Scene でまとめて読み込む
   preload(): void {
     this.load.image(CHARACTER_TEXTURE, 'images/paint-anpan.png');
+    this.load.font(LOGO_FONT.family, LOGO_FONT.url, 'woff');
   }
 
   create(): void {
     setupCamera(this);
 
     this.add.image(GAME_WIDTH / 2, 100, CHARACTER_TEXTURE).setDisplaySize(150, 150);
-    this.add.text(GAME_WIDTH / 2, 205, 'Palette Lab', textStyle(52, TEXT_COLORS.ink, 'mincho')).setOrigin(0.5);
-    this.add.text(GAME_WIDTH / 2, 256, '混色で、色を見る目を育てる', textStyle(20, TEXT_COLORS.subInk)).setOrigin(0.5);
+    this.add.text(GAME_WIDTH / 2, 205, 'ぬりぬりくらぶ', textStyle(48, TEXT_COLORS.ink, 'logo')).setOrigin(0.5);
 
     this.add.rectangle(GAME_WIDTH / 2, 335, 300, 100).setRounded(16).setFillStyle(COLORS.surface).setStrokeStyle(2, COLORS.line);
     PIGMENTS.forEach((pigment, index) => {
@@ -47,26 +63,48 @@ export class TitleScene extends Phaser.Scene {
         .setStrokeStyle(1.5, COLORS.ink, 0.3);
     });
 
-    this.add
-      .text(GAME_WIDTH / 2, 460, RULES.join('\n'), { ...textStyle(17), align: 'center', lineSpacing: 6 })
-      .setOrigin(0.5);
+    const goal = this.add.text(GAME_WIDTH / 2, 435, GOAL, textStyle(20)).setOrigin(0.5);
+    this.add.rectangle(GAME_WIDTH / 2, goal.y + goal.height / 2 + 4, goal.width, 2, COLORS.ink);
 
-    this.add.rectangle(GAME_WIDTH / 2, 610, 400, 124).setRounded(12).setFillStyle(COLORS.surface).setStrokeStyle(2, COLORS.line);
-    this.add
-      .text(GAME_WIDTH / 2, 610, ['このゲームで使う言葉', ...TERMS].join('\n'), {
-        ...textStyle(16, TEXT_COLORS.subInk),
-        fixedWidth: 340,
-        lineSpacing: 6,
-      })
-      .setOrigin(0.5);
+    new TextButton(this, GAME_WIDTH / 2, 497, 180, 44, '色について', () => this.openHelp(), 'secondary');
 
-    this.add.text(GAME_WIDTH / 2, 692, '難易度を選んでスタート', textStyle(16, TEXT_COLORS.subInk)).setOrigin(0.5);
+    this.add.text(GAME_WIDTH / 2, 557, '難易度を選んでスタート', textStyle(16, TEXT_COLORS.subInk)).setOrigin(0.5);
     DIFFICULTIES.forEach((difficulty, index) => {
-      const x = GAME_WIDTH / 2 + (index - 1) * 150;
+      const y = 612 + index * 70;
       const { label, pigments } = COURSES[difficulty];
-      new TextButton(this, x, 735, 136, 56, label, () => this.start(difficulty));
-      this.add.text(x, 779, `絵の具 ${pigments.length}色`, textStyle(14, TEXT_COLORS.subInk)).setOrigin(0.5);
+      new TextButton(this, 110, y, 120, 56, label, () => this.start(difficulty));
+      this.add.text(190, y - 11, DIFFICULTY_NOTES[difficulty], textStyle(18)).setOrigin(0, 0.5);
+      this.add.text(190, y + 14, `絵の具 ${pigments.length}色`, textStyle(14, TEXT_COLORS.subInk)).setOrigin(0, 0.5);
     });
+  }
+
+  // 閉じたら作り直す。非表示にするだけだと、テストが押せる図形を探すときに残ってしまう
+  private openHelp(): void {
+    if (this.helpObjects.length > 0) return;
+
+    // 後ろの難易度ボタンに押下を通さないため、背景も押せる図形にする
+    const backdrop = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, COLORS.ink, 0.4).setInteractive();
+    const panel = this.add
+      .rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 420, 600)
+      .setRounded(16)
+      .setFillStyle(COLORS.surface)
+      .setStrokeStyle(2, COLORS.line);
+    const title = this.add.text(GAME_WIDTH / 2, 145, '色の3つのものさし', textStyle(24, TEXT_COLORS.ink, 'mincho')).setOrigin(0.5);
+    const terms = COLOR_TERMS.flatMap(({ name, lines }, index) => {
+      const y = 195 + index * 140;
+      return [
+        this.add.text(70, y, name, { ...textStyle(20), fontStyle: 'bold' }),
+        this.add.text(70, y + 32, lines.join('\n'), { ...textStyle(16, TEXT_COLORS.subInk), lineSpacing: 4 }),
+      ];
+    });
+    const closeButton = new TextButton(this, GAME_WIDTH / 2, 650, 160, 48, '閉じる', () => this.closeHelp());
+
+    this.helpObjects = [backdrop, panel, title, ...terms, ...closeButton.objects];
+  }
+
+  private closeHelp(): void {
+    for (const object of this.helpObjects) object.destroy();
+    this.helpObjects = [];
   }
 
   private start(difficulty: Difficulty): void {

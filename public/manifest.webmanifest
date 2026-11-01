@@ -1,6 +1,6 @@
 {
-  "name": "Palette Lab",
-  "short_name": "Palette Lab",
+  "name": "ぬりぬりくらぶ",
+  "short_name": "ぬりぬりくらぶ",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
