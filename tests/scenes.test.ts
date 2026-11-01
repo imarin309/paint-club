@@ -148,13 +148,16 @@ it('プレイ中に「タイトルへ」を押すと確認が出て、続けれ�
   const hasText = (label: string) =>
     gameScene.children.list.some((object) => object instanceof Phaser.GameObjects.Text && object.text === label);
   const confirmMessage = 'ゲームをやめますか？\nここまでの結果は消えます';
+  const history = () => (gameScene as unknown as { round: { history: string[] } }).round.history;
 
+  press(gameScene, '緑');
   press(gameScene, 'タイトルへ');
   expect(hasText(confirmMessage)).toBe(true);
   press(gameScene, '続ける');
   expect(hasText(confirmMessage)).toBe(false);
-  press(gameScene, '緑');
-  expect((gameScene as unknown as { round: { history: string[] } }).round.history).toEqual(['green']);
+  expect(history()).toEqual(['green']);
+  press(gameScene, '白');
+  expect(history()).toEqual(['green', 'white']);
 
   press(gameScene, 'タイトルへ');
   press(gameScene, 'やめる');
