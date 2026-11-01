@@ -3,7 +3,7 @@ import type { Pigment, RoundState } from './types.ts';
 export const MAX_DROPS = 8;
 
 export function createRound(): RoundState {
-  return { history: [], undoAvailable: true, completed: false };
+  return { history: [], completed: false };
 }
 
 export function canAddDrop(state: RoundState): boolean {
@@ -11,7 +11,7 @@ export function canAddDrop(state: RoundState): boolean {
 }
 
 export function canUndo(state: RoundState): boolean {
-  return !state.completed && state.undoAvailable && state.history.length > 0;
+  return !state.completed && state.history.length > 0;
 }
 
 export function canComplete(state: RoundState): boolean {
@@ -30,7 +30,7 @@ export function addDrop(state: RoundState, pigment: Pigment): RoundState {
 
 export function undoLastDrop(state: RoundState): RoundState {
   if (!canUndo(state)) return state;
-  return { ...state, history: state.history.slice(0, -1), undoAvailable: false };
+  return { ...state, history: state.history.slice(0, -1) };
 }
 
 export function completeRound(state: RoundState): RoundState {
