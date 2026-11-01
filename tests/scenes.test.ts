@@ -3,12 +3,15 @@
 // @vitest-environment-options {"resources":"usable"}
 import Phaser from 'phaser';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { mixColor } from '../src/domain/paintMixing.ts';
 import { formatRecipe } from '../src/domain/recipe.ts';
+import { targetColorOf } from '../src/domain/stages.ts';
+import type { Stage } from '../src/domain/types.ts';
 import { FinalResultScene } from '../src/scenes/FinalResultScene.ts';
 import { GameScene, type GameSceneData, type RoundResult } from '../src/scenes/GameScene.ts';
 import { ResultScene } from '../src/scenes/ResultScene.ts';
 import { TitleScene } from '../src/scenes/TitleScene.ts';
-import { CHARACTER_TEXTURE } from '../src/ui/common.ts';
+import { CHARACTER_TEXTURE, toHex } from '../src/ui/common.ts';
 
 // Phaser の更新で、型は通るのに実行時に壊れる退行を拾うためのテスト。描画結果までは見ない
 
@@ -47,17 +50,22 @@ async function waitForScene(key: string): Promise<Phaser.Scene> {
   return game.scene.getScene(key);
 }
 
-// ボタンの実装に依存しないよう、ラベルの文字から一番近い押せる図形を押す
+// ボタンの実装に依存しないよう、ラベルの文字から一番近い押せる図形を押す。
+// 色相環の目印と絵の具のように同じ文字が複数あるときは、押せる図形に一番近い文字をラベルとみなす
 function press(scene: Phaser.Scene, label: string): void {
   const objects = scene.children.list;
-  const text = objects.find((object) => object instanceof Phaser.GameObjects.Text && object.text === label);
-  if (!(text instanceof Phaser.GameObjects.Text)) throw new Error(`「${label}」が見つかりません`);
-  const distance = (object: Phaser.GameObjects.GameObject) =>
-    object instanceof Phaser.GameObjects.Shape ? Phaser.Math.Distance.Between(object.x, object.y, text.x, text.y) : Infinity;
-  const target = objects
-    .filter((object) => object.input?.enabled)
-    .reduce((nearest, object) => (distance(object) < distance(nearest) ? object : nearest));
-  target.emit('pointerdown');
+  const texts = objects.filter(
+    (object): object is Phaser.GameObjects.Text => object instanceof Phaser.GameObjects.Text && object.text === label,
+  );
+  if (texts.length === 0) throw new Error(`「${label}」が見つかりません`);
+  const interactives = objects.filter(
+    (object): object is Phaser.GameObjects.Shape => object instanceof Phaser.GameObjects.Shape && !!object.input?.enabled,
+  );
+  const candidates = texts.flatMap((text) =>
+    interactives.map((shape) => ({ shape, distance: Phaser.Math.Distance.Between(shape.x, shape.y, text.x, text.y) })),
+  );
+  const nearest = candidates.reduce((best, candidate) => (candidate.distance < best.distance ? candidate : best));
+  nearest.shape.emit('pointerdown');
 }
 
 it('タイトルで難易度を選んで調色し、結果を見て次のステージへ進める', async () => {
@@ -142,6 +150,42 @@ it('5ステージを終えると結果発表へ進み、再挑戦した結果は
   expect(errors).toEqual([]);
 });
 
+it('「ヒント」で色相環と明度バーをお題の位置ごと出し入れでき、出した状態は次のステージへ持ち越す', async () => {
+  press(await waitForScene('TitleScene'), '初級');
+  const meterLayerOf = (scene: Phaser.Scene) => (scene as unknown as { meterLayer: Phaser.GameObjects.Layer }).meterLayer;
+  const hasTargetMarker = (scene: Phaser.Scene) => {
+    const targetHex = toHex(targetColorOf((scene as unknown as { stage: Stage }).stage));
+    // お題の色見本と区別するため、小さい四角だけを数える
+    const markers = meterLayerOf(scene)
+      .getChildren()
+      .filter((object) => object instanceof Phaser.GameObjects.Rectangle && object.fillColor === targetHex && object.width < 20);
+    return markers.length === 2;
+  };
+
+  const swatchHeightOf = (scene: Phaser.Scene) =>
+    (scene as unknown as { currentSwatch: Phaser.GameObjects.Rectangle }).currentSwatch.height;
+
+  const gameScene = await waitForScene('GameScene');
+  expect(meterLayerOf(gameScene).visible).toBe(false);
+  const heightWithoutMeters = swatchHeightOf(gameScene);
+  press(gameScene, 'ヒント');
+  expect(meterLayerOf(gameScene).visible).toBe(true);
+  // 隠している間は、空いた場所まで色見本を伸ばしている
+  expect(swatchHeightOf(gameScene)).toBeLessThan(heightWithoutMeters);
+  expect(hasTargetMarker(gameScene)).toBe(true);
+  press(gameScene, '隠す');
+  expect(meterLayerOf(gameScene).visible).toBe(false);
+  press(gameScene, 'ヒント');
+
+  press(gameScene, '緑');
+  press(gameScene, '完成！');
+  press(await waitForScene('ResultScene'), '次のステージ');
+  const nextScene = await waitForScene('GameScene');
+  expect(meterLayerOf(nextScene).visible).toBe(true);
+  expect(hasTargetMarker(nextScene)).toBe(true);
+  expect(errors).toEqual([]);
+});
+
 it('プレイ中に「タイトルへ」を押すと確認が出て、続ければそのまま遊べ、やめればタイトルへ戻る', async () => {
   press(await waitForScene('TitleScene'), '初級');
   const gameScene = await waitForScene('GameScene');
@@ -162,5 +206,24 @@ it('プレイ中に「タイトルへ」を押すと確認が出て、続けれ�
   press(gameScene, 'タイトルへ');
   press(gameScene, 'やめる');
   await waitForScene('TitleScene');
+  expect(errors).toEqual([]);
+});
+
+it('滴の落下中に「ヒント」を押しても、滴は残らず、現在の色は確定した色に追いつく', async () => {
+  press(await waitForScene('TitleScene'), '初級');
+  const gameScene = await waitForScene('GameScene');
+  const internals = gameScene as unknown as {
+    drops: Set<Phaser.GameObjects.Arc>;
+    currentSwatch: Phaser.GameObjects.Rectangle;
+  };
+
+  press(gameScene, '緑');
+  expect(internals.drops.size).toBe(1);
+  press(gameScene, 'ヒント');
+  expect(internals.drops.size).toBe(0);
+
+  const settled = mixColor(['green']);
+  if (!settled) throw new Error('緑1滴の色が作れません');
+  await vi.waitFor(() => expect(internals.currentSwatch.fillColor).toBe(toHex(settled)));
   expect(errors).toEqual([]);
 });

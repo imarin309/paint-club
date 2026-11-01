@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { HUE_ANCHORS, chromaOf, hueAngle, labToRgb, rgbToLab } from '../domain/scoring.ts';
 import type { RgbColor } from '../domain/types.ts';
-import { ColorTrail, type Point } from './colorTrail.ts';
+import { ColorTrail, type Point, addTargetMarker } from './colorTrail.ts';
 import { COLORS, TEXT_COLORS, textStyle, toHex } from './common.ts';
 
 const RADIUS = 70;
@@ -21,8 +21,9 @@ const ANCHOR_LABEL_OFFSET = 16;
  */
 export class ColorDisc {
   private readonly trail: ColorTrail;
+  readonly objects: Phaser.GameObjects.GameObject[];
 
-  constructor(scene: Phaser.Scene, x: number, y: number) {
+  constructor(scene: Phaser.Scene, x: number, y: number, target: RgbColor) {
     const toPoint = (hue: number, radius: number): Point => {
       const radians = Phaser.Math.DegToRad(hue);
       return { x: x + radius * Math.cos(radians), y: y - radius * Math.sin(radians) };
@@ -44,15 +45,18 @@ export class ColorDisc {
       graphics.strokePath();
     }
 
-    for (const anchor of HUE_ANCHORS) {
+    const anchorLabels = HUE_ANCHORS.map((anchor) => {
       const { x: labelX, y: labelY } = toPoint(anchor.angle, RADIUS + ANCHOR_LABEL_OFFSET);
-      scene.add.text(labelX, labelY, anchor.name.slice(0, 1), textStyle(14, TEXT_COLORS.subInk)).setOrigin(0.5);
-    }
+      return scene.add.text(labelX, labelY, anchor.name.slice(0, 1), textStyle(14, TEXT_COLORS.subInk)).setOrigin(0.5);
+    });
 
-    this.trail = new ColorTrail(scene, (color) => {
+    const project = (color: RgbColor): Point => {
       const lab = rgbToLab(color);
       return toPoint(hueAngle(lab), (RADIUS * Math.min(chromaOf(lab), FULL_CHROMA)) / FULL_CHROMA);
-    });
+    };
+    const targetMarker = addTargetMarker(scene, project(target), target);
+    this.trail = new ColorTrail(scene, project);
+    this.objects = [graphics, ...anchorLabels, targetMarker, ...this.trail.objects];
   }
 
   show(colors: readonly RgbColor[]): this {
