@@ -75,6 +75,21 @@ it('タイトルで難易度を選んで調色し、結果を見て次のステ�
   expect(errors).toEqual([]);
 });
 
+it('「色について」を開いて閉じると、難易度を選べる', async () => {
+  const titleScene = await waitForScene('TitleScene');
+  const hasText = (label: string) =>
+    titleScene.children.list.some((object) => object instanceof Phaser.GameObjects.Text && object.text === label);
+
+  press(titleScene, '色について');
+  expect(hasText('色の3つのものさし')).toBe(true);
+  press(titleScene, '閉じる');
+  expect(hasText('色の3つのものさし')).toBe(false);
+
+  press(titleScene, '初級');
+  await waitForScene('GameScene');
+  expect(errors).toEqual([]);
+});
+
 it('答えを見ると、その問題には再挑戦できなくなる', async () => {
   press(await waitForScene('TitleScene'), '初級');
   const gameScene = await waitForScene('GameScene');
