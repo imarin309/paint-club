@@ -14,7 +14,7 @@ import { PIGMENT_LABELS } from '../domain/recipe.ts';
 import { scoreColor } from '../domain/scoring.ts';
 import { COURSES, STAGES_PER_RUN, pickStages, targetColorOf } from '../domain/stages.ts';
 import type { Difficulty, MixHistory, Pigment, RgbColor, RoundState, Stage } from '../domain/types.ts';
-import { COLORS, GAME_WIDTH, TEXT_COLORS, TextButton, setupCamera, textStyle, toHex } from '../ui/common.ts';
+import { COLORS, GAME_HEIGHT, GAME_WIDTH, TEXT_COLORS, TextButton, setupCamera, textStyle, toHex } from '../ui/common.ts';
 import { DropDots } from '../ui/dropDots.ts';
 import { ColorDisc } from '../ui/colorDisc.ts';
 import { LightnessBar } from '../ui/lightnessBar.ts';
@@ -78,6 +78,7 @@ export class GameScene extends Phaser.Scene {
   private undoButton!: TextButton;
   private completeButton!: TextButton;
   private pigmentButtons: PigmentButton[] = [];
+  private quitConfirmObjects: Phaser.GameObjects.GameObject[] = [];
 
   constructor() {
     super('GameScene');
@@ -94,17 +95,23 @@ export class GameScene extends Phaser.Scene {
     this.displayedColor = null;
     this.colorTween = undefined;
     this.pigmentButtons = [];
+    this.quitConfirmObjects = [];
   }
 
   create(): void {
     setupCamera(this);
     const { difficulty, stages, stageIndex } = this.run;
 
-    this.add.text(24, 16, COURSES[difficulty].label, textStyle(16, TEXT_COLORS.subInk));
+    new TextButton(this, 70, 28, 96, 32, 'タイトルへ', () => this.openQuitConfirm(), 'secondary', 16);
     this.add
-      .text(GAME_WIDTH - 24, 16, `STAGE ${stageIndex + 1} / ${stages.length}`, textStyle(16, TEXT_COLORS.subInk))
-      .setOrigin(1, 0);
-    this.add.text(GAME_WIDTH / 2, 50, `お題：${this.stage.name}`, textStyle(26, TEXT_COLORS.ink, 'mincho')).setOrigin(0.5);
+      .text(
+        GAME_WIDTH - 24,
+        28,
+        `${COURSES[difficulty].label}　STAGE ${stageIndex + 1} / ${stages.length}`,
+        textStyle(16, TEXT_COLORS.subInk),
+      )
+      .setOrigin(1, 0.5);
+    this.add.text(GAME_WIDTH / 2, 58, `お題：${this.stage.name}`, textStyle(26, TEXT_COLORS.ink, 'mincho')).setOrigin(0.5);
 
     this.createSwatches();
     this.createMeters();
@@ -211,6 +218,52 @@ export class GameScene extends Phaser.Scene {
     this.showColorImmediately(actual);
     const data: ResultSceneData = { run: this.run, result };
     this.time.delayedCall(250, () => this.scene.start('ResultScene', data));
+  }
+
+  // 閉じたら作り直す。非表示にするだけだと、テストが押せる図形を探すときに残ってしまう
+  private openQuitConfirm(): void {
+    if (this.leaving || this.quitConfirmObjects.length > 0) return;
+
+    // 後ろの絵の具やボタンに押下を通さないため、背景も押せる図形にする
+    const backdrop = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, COLORS.ink, 0.4).setInteractive();
+    const panel = this.add
+      .rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 380, 220)
+      .setRounded(16)
+      .setFillStyle(COLORS.surface)
+      .setStrokeStyle(2, COLORS.line);
+    const message = this.add
+      .text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 45, 'ゲームをやめますか？\nここまでの結果は消えます', {
+        ...textStyle(20),
+        align: 'center',
+        lineSpacing: 8,
+      })
+      .setOrigin(0.5);
+    const buttonY = GAME_HEIGHT / 2 + 55;
+    const quitButton = new TextButton(this, GAME_WIDTH / 2 - 85, buttonY, 150, 52, 'やめる', () => this.quitToTitle(), 'secondary');
+    const continueButton = new TextButton(
+      this,
+      GAME_WIDTH / 2 + 85,
+      buttonY,
+      150,
+      52,
+      '続ける',
+      () => this.closeQuitConfirm(),
+      'secondary',
+    );
+
+    this.quitConfirmObjects = [backdrop, panel, message, ...quitButton.objects, ...continueButton.objects];
+  }
+
+  private closeQuitConfirm(): void {
+    for (const object of this.quitConfirmObjects) object.destroy();
+    this.quitConfirmObjects = [];
+  }
+
+  private quitToTitle(): void {
+    if (this.leaving) return;
+    this.leaving = true;
+    this.tweens.killAll();
+    this.scene.start('TitleScene');
   }
 
   private playDropAnimation(pigment: Pigment): void {

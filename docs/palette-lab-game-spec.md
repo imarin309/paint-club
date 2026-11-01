@@ -2,7 +2,7 @@
 
 > ドキュメント種別：ゲーム仕様（How / Rules）  
 > バージョン：v0.1（プロトタイプ仕様）  
-> ステータス：未実装・一部詳細は検証待ち  
+> ステータス：v0.1 実装済み・公開中（実装との差異は[実装判断の記録](./implementation-decisions.md#7-仕様書との差異暫定対応)を参照）  
 > 関連文書：[ゲームコンセプト](./palette-lab-concept.md)  
 > 開発想定：Phaser + TypeScript / Vite
 
