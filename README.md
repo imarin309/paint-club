@@ -2,7 +2,7 @@
 
 限られた絵の具を混ぜてお題の色に近づける、引き際が大事な調色パズルゲームです。開発時の仮称は Palette Lab で、リポジトリ名や文書名にはこの名前が残っています。
 
-https://pallet-lab.calm-corner.com/
+https://paint-club.calm-corner.com/
 
 ## 遊び方
 
