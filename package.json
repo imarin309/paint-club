@@ -19,9 +19,9 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.6",
+    "@napi-rs/canvas": "^1.1.1",
     "@types/node": "^26.6.6",
-    "canvas": "^3.2.3",
-    "jsdom": "^30.1.3",
+    "jsdom": "^31.0.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.6",
     "vitest": "^5.1.0",
@@ -30,8 +30,7 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild",
-      "workerd",
-      "canvas"
+      "workerd"
     ],
     "overrides": {
       "miniflare>undici": "^7.30.1"
